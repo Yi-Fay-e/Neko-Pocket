@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neko-Pocket | 無腦記帳測試</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 稍微加一點點明亮感，之後我們再大改版 */
+        body { background-color: #fdfbf7; font-family: sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="p-4">
+    <div id="app" class="max-w-md mx-auto">
+        <header class="py-6 text-center">
+            <h1 class="text-2xl font-bold text-orange-400">🐾 Neko-Pocket</h1>
+            <p class="text-gray-400 text-xs mt-1">截圖匯入，無腦記帳</p>
+        </header>
+
+        <div class="glass p-6 rounded-3xl shadow-sm border border-white mb-6">
+            <label class="block mb-3 text-sm font-medium text-gray-500">📥 匯入帳單截圖</label>
+            <input type="file" @change="handleFileUpload" accept="image/*" 
+                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer"/>
+            
+            <div v-if="loading" class="mt-6 text-center">
+                <div class="animate-bounce inline-block w-4 h-4 bg-orange-400 rounded-full mr-1"></div>
+                <div class="animate-bounce inline-block w-4 h-4 bg-orange-300 rounded-full mr-1" style="animation-delay: 0.1s"></div>
+                <div class="animate-bounce inline-block w-4 h-4 bg-orange-200 rounded-full" style="animation-delay: 0.2s"></div>
+                <p class="text-xs text-gray-400 mt-2">凜凜正在努力辨識中... {{ progress }}%</p>
+            </div>
+        </div>
+
+        <div v-if="tempEntry.show" class="bg-white p-6 rounded-3xl shadow-lg border-2 border-orange-100 mb-6">
+            <h2 class="font-bold mb-4 text-gray-700 flex items-center">✨ 確認資訊</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">日期</label>
+                    <input v-model="tempEntry.date" type="text" class="w-full p-2 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-orange-200 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">項目內容</label>
+                    <input v-model="tempEntry.merchant" type="text" placeholder="手動輸入商店名稱" class="w-full p-2 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-orange-200 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">金額</label>
+                    <input v-model="tempEntry.amount" type="number" class="w-full p-2 bg-gray-50 rounded-xl border-none font-bold text-lg text-orange-600 outline-none">
+                </div>
+                <button @click="saveEntry" class="w-full bg-orange-400 text-white py-3 rounded-2xl font-bold shadow-md hover:bg-orange-500 transition">入帳到 Neko-Pocket</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-gray-50 flex justify-between items-end">
+                <h2 class="font-bold text-gray-700">本月支出</h2>
+                <span class="text-2xl font-black text-gray
