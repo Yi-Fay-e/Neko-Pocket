@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neko-Pocket | 無腦記帳測試</title>
+    <title>Neko-Pocket | 無腦記帳</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 稍微加一點點明亮感，之後我們再大改版 */
-        body { background-color: #fdfbf7; font-family: sans-serif; }
+        [v-cloak] { display: none; }
+        body { background-color: #fdfbf7; font-family: 'PingFang TC', sans-serif; }
         .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="p-4">
-    <div id="app" class="max-w-md mx-auto">
+    <div id="app" v-cloak class="max-w-md mx-auto">
         <header class="py-6 text-center">
             <h1 class="text-2xl font-bold text-orange-400">🐾 Neko-Pocket</h1>
             <p class="text-gray-400 text-xs mt-1">截圖匯入，無腦記帳</p>
@@ -26,27 +26,29 @@
                 class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer"/>
             
             <div v-if="loading" class="mt-6 text-center">
-                <div class="animate-bounce inline-block w-4 h-4 bg-orange-400 rounded-full mr-1"></div>
-                <div class="animate-bounce inline-block w-4 h-4 bg-orange-300 rounded-full mr-1" style="animation-delay: 0.1s"></div>
-                <div class="animate-bounce inline-block w-4 h-4 bg-orange-200 rounded-full" style="animation-delay: 0.2s"></div>
-                <p class="text-xs text-gray-400 mt-2">凜凜正在努力辨識中... {{ progress }}%</p>
+                <div class="flex justify-center gap-1 mb-2">
+                    <div class="animate-bounce w-2 h-2 bg-orange-400 rounded-full"></div>
+                    <div class="animate-bounce w-2 h-2 bg-orange-300 rounded-full" style="animation-delay: 0.1s"></div>
+                    <div class="animate-bounce w-2 h-2 bg-orange-200 rounded-full" style="animation-delay: 0.2s"></div>
+                </div>
+                <p class="text-xs text-gray-400">凜凜正在努力辨識中... {{ progress }}%</p>
             </div>
         </div>
 
         <div v-if="tempEntry.show" class="bg-white p-6 rounded-3xl shadow-lg border-2 border-orange-100 mb-6">
-            <h2 class="font-bold mb-4 text-gray-700 flex items-center">✨ 確認資訊</h2>
-            <div class="space-y-4">
+            <h2 class="font-bold mb-4 text-gray-700">✨ 確認資訊</h2>
+            <div class="space-y-4 text-sm">
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">日期</label>
-                    <input v-model="tempEntry.date" type="text" class="w-full p-2 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-orange-200 outline-none">
+                    <label class="block text-gray-400 mb-1">日期</label>
+                    <input v-model="tempEntry.date" type="text" class="w-full p-2 bg-gray-50 rounded-xl outline-none focus:ring-1 focus:ring-orange-200">
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">項目內容</label>
-                    <input v-model="tempEntry.merchant" type="text" placeholder="手動輸入商店名稱" class="w-full p-2 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-orange-200 outline-none">
+                    <label class="block text-gray-400 mb-1">項目內容</label>
+                    <input v-model="tempEntry.merchant" type="text" placeholder="手動輸入商店名稱" class="w-full p-2 bg-gray-50 rounded-xl outline-none focus:ring-1 focus:ring-orange-200">
                 </div>
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">金額</label>
-                    <input v-model="tempEntry.amount" type="number" class="w-full p-2 bg-gray-50 rounded-xl border-none font-bold text-lg text-orange-600 outline-none">
+                    <label class="block text-gray-400 mb-1">金額</label>
+                    <input v-model="tempEntry.amount" type="number" class="w-full p-2 bg-gray-50 rounded-xl font-bold text-lg text-orange-600 outline-none">
                 </div>
                 <button @click="saveEntry" class="w-full bg-orange-400 text-white py-3 rounded-2xl font-bold shadow-md hover:bg-orange-500 transition">入帳到 Neko-Pocket</button>
             </div>
@@ -55,4 +57,79 @@
         <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
             <div class="p-5 border-b border-gray-50 flex justify-between items-end">
                 <h2 class="font-bold text-gray-700">本月支出</h2>
-                <span class="text-2xl font-black text-gray
+                <span class="text-2xl font-black text-gray-800">${{ totalAmount.toLocaleString() }}</span>
+            </div>
+            <ul class="divide-y divide-gray-50 text-sm">
+                <li v-for="(item, index) in records" :key="index" class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
+                    <div>
+                        <p class="font-bold text-gray-700">{{ item.merchant || '未命名消費' }}</p>
+                        <p class="text-[10px] text-gray-400">{{ item.date }}</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold text-gray-600">${{ item.amount.toLocaleString() }}</span>
+                        <button @click="deleteRecord(index)" class="text-gray-300 hover:text-red-400 text-lg">×</button>
+                    </div>
+                </li>
+                <li v-if="records.length === 0" class="p-10 text-center text-gray-300">目前還空空的喔 🐾</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const loading = ref(false);
+                const progress = ref(0);
+                const records = ref(JSON.parse(localStorage.getItem('neko_records') || '[]'));
+                const tempEntry = ref({ show: false, date: '', merchant: '', amount: 0 });
+
+                const handleFileUpload = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    loading.value = true;
+                    progress.value = 0;
+
+                    try {
+                        const worker = await Tesseract.createWorker('chi_tra', 1, {
+                            logger: m => { if (m.status === 'recognizing text') progress.value = Math.floor(m.progress * 100); }
+                        });
+
+                        const { data: { text } } = await worker.recognize(file);
+                        const dateMatch = text.match(/\d{1,4}[/-]\d{1,2}[/-]\d{1,2}/) || text.match(/\d{1,2}[/-]\d{1,2}/);
+                        const amountMatches = text.match(/[\d,]{2,}/g) || [];
+                        const cleanAmounts = amountMatches.map(a => parseFloat(a.replace(/,/g, ''))).filter(n => n < 1000000); 
+                        const estimatedAmount = cleanAmounts.length > 0 ? Math.max(...cleanAmounts) : 0;
+
+                        tempEntry.value = {
+                            show: true,
+                            date: dateMatch ? dateMatch[0] : new Date().toLocaleDateString(),
+                            merchant: "", 
+                            amount: estimatedAmount
+                        };
+                        await worker.terminate();
+                    } catch (e) { alert("辨識失敗了..."); }
+                    finally { loading.value = false; event.target.value = ''; }
+                };
+
+                const saveEntry = () => {
+                    records.value.unshift({ ...tempEntry.value });
+                    localStorage.setItem('neko_records', JSON.stringify(records.value));
+                    tempEntry.value.show = false;
+                };
+
+                const deleteRecord = (index) => {
+                    records.value.splice(index, 1);
+                    localStorage.setItem('neko_records', JSON.stringify(records.value));
+                };
+
+                const totalAmount = computed(() => records.value.reduce((s, i) => s + Number(i.amount), 0));
+
+                return { loading, progress, records, tempEntry, handleFileUpload, saveEntry, deleteRecord, totalAmount };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
